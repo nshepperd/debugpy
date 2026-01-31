@@ -1926,6 +1926,54 @@ def restart_events() -> None:
 
 # fmt: off
 # IFDEF CYTHON -- DONT EDIT THIS FILE (it is automatically generated)
+cpdef get_thread_tracing():
+# ELSE
+# def get_thread_tracing():
+# ENDIF
+# fmt: on
+    """
+    Returns whether tracing is enabled for the current thread.
+
+    Returns True if tracing is enabled, False if disabled, or None if
+    thread info is not yet initialized for this thread.
+    """
+    try:
+        thread_info = _thread_local_info.thread_info
+        return thread_info.trace
+    except AttributeError:
+        return None
+
+
+# fmt: off
+# IFDEF CYTHON -- DONT EDIT THIS FILE (it is automatically generated)
+cpdef set_thread_tracing(bint trace):
+# ELSE
+# def set_thread_tracing(trace: bool):
+# ENDIF
+# fmt: on
+    """
+    Sets whether tracing is enabled for the current thread.
+
+    Args:
+        trace: True to enable tracing, False to disable.
+
+    Returns:
+        The previous tracing state, or None if thread info was not initialized.
+    """
+    try:
+        thread_info = _thread_local_info.thread_info
+    except AttributeError:
+        thread_info = _get_thread_info(True, 1)
+        if thread_info is None:
+            return None
+
+    previous = thread_info.trace
+    thread_info.trace = trace
+    return previous
+
+
+# fmt: off
+# IFDEF CYTHON -- DONT EDIT THIS FILE (it is automatically generated)
 cdef _is_same_frame(PyDBAdditionalThreadInfo info, target_frame, current_frame):
 # ELSE
 # def _is_same_frame(info, target_frame, current_frame):

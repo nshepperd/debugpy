@@ -364,3 +364,73 @@ def trace_this_thread(should_trace):
         pydb.enable_tracing()
     else:
         pydb.disable_tracing()
+
+
+def postmortem():
+    """Enters post-mortem debugging for the current exception.
+
+    If a debugger client is connected and an exception is currently being
+    handled (i.e., sys.exc_info() returns an exception), the debugger will
+    stop at the point where the exception was raised, allowing inspection
+    of the call stack and variables at the time of the exception.
+
+    This is typically used in an except block to debug the exception:
+
+        try:
+            some_code_that_might_fail()
+        except Exception:
+            debugpy.postmortem()
+
+    If no debugger client is connected, or no exception is being handled,
+    this function does nothing.
+    """
+    ensure_logging()
+    log.debug("postmortem()")
+
+    if not is_client_connected():
+        log.info("postmortem() ignored - debugger not attached")
+        return
+
+    exc_info = sys.exc_info()
+    exc_type, exc_value, exc_tb = exc_info
+
+    if exc_type is None:
+        log.info("postmortem() ignored - no exception being handled")
+        return
+
+    py_db = get_global_debugger()
+    if py_db is None:
+        log.info("postmortem() ignored - no global debugger")
+        return
+
+    thread = threading.current_thread()
+
+    # Get or create additional thread info
+    from _pydevd_bundle.pydevd_additional_thread_info import set_additional_thread_info
+    additional_info = set_additional_thread_info(thread)
+
+    # Prevent reentrant debugging by temporarily incrementing is_tracing
+    additional_info.is_tracing += 1
+
+    # For Python 3.12+ with sys.monitoring, also disable thread-local tracing
+    saved_trace = None
+    if hasattr(sys, 'monitoring'):
+        try:
+            from _pydevd_sys_monitoring.pydevd_sys_monitoring import (
+                get_thread_tracing,
+                set_thread_tracing,
+            )
+            saved_trace = get_thread_tracing()
+            if saved_trace is not None:
+                set_thread_tracing(False)
+        except ImportError:
+            pass
+
+    try:
+        from _pydevd_bundle.pydevd_breakpoints import stop_on_unhandled_exception
+        stop_on_unhandled_exception(py_db, thread, additional_info, exc_info)
+    finally:
+        # Restore previous tracing states
+        additional_info.is_tracing -= 1
+        if saved_trace is not None:
+            set_thread_tracing(saved_trace)

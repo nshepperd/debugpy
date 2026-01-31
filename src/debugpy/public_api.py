@@ -212,6 +212,27 @@ def trace_this_thread(__should_trace: bool):
     """
 
 
+@_api()
+def postmortem() -> None:
+    """Enters post-mortem debugging for the current exception.
+
+    If a debugger client is connected and an exception is currently
+    being handled, the debugger will stop at the point where the
+    exception was raised, allowing inspection of the call stack and
+    variables at the time of the exception.
+
+    This is typically used in an except block::
+
+        try:
+            some_code_that_might_fail()
+        except Exception:
+            debugpy.postmortem()
+
+    If no debugger client is connected, or no exception is being
+    handled, this function does nothing.
+    """
+
+
 def get_cli_options() -> CliOptions | None:
     """Returns the CLI options that were processed by debugpy.
     
