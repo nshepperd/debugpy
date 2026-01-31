@@ -212,14 +212,22 @@ def trace_this_thread(__should_trace: bool):
     """
 
 
-@_api()
-def postmortem() -> None:
-    """Enters post-mortem debugging for the current exception.
+ExcInfo = typing.Tuple[type, BaseException, typing.Any]
 
-    If a debugger client is connected and an exception is currently
-    being handled, the debugger will stop at the point where the
-    exception was raised, allowing inspection of the call stack and
-    variables at the time of the exception.
+
+@_api()
+def postmortem(
+    __exc_info: ExcInfo | None = None,
+) -> None:
+    """Enters post-mortem debugging for an exception.
+
+    If a debugger client is connected and exception info is available,
+    the debugger will stop at the point where the exception was raised,
+    allowing inspection of the call stack and variables.
+
+    `__exc_info` is an optional tuple of (type, value, traceback) as
+    returned by sys.exc_info(). If not provided, sys.exc_info() is
+    called to get the current exception.
 
     This is typically used in an except block::
 
@@ -228,8 +236,12 @@ def postmortem() -> None:
         except Exception:
             debugpy.postmortem()
 
-    If no debugger client is connected, or no exception is being
-    handled, this function does nothing.
+    Or with explicit exception info (e.g., in a context manager)::
+
+        debugpy.postmortem(sys.exc_info())
+
+    If no debugger client is connected, or no exception info is
+    available, this function does nothing.
     """
 
 

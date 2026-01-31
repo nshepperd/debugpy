@@ -366,13 +366,18 @@ def trace_this_thread(should_trace):
         pydb.disable_tracing()
 
 
-def postmortem():
-    """Enters post-mortem debugging for the current exception.
+def postmortem(exc_info=None):
+    """Enters post-mortem debugging for an exception.
 
-    If a debugger client is connected and an exception is currently being
-    handled (i.e., sys.exc_info() returns an exception), the debugger will
-    stop at the point where the exception was raised, allowing inspection
-    of the call stack and variables at the time of the exception.
+    If a debugger client is connected and exception info is available,
+    the debugger will stop at the point where the exception was raised,
+    allowing inspection of the call stack and variables at the time of
+    the exception.
+
+    Args:
+        exc_info: Optional tuple of (type, value, traceback) as returned
+            by sys.exc_info(). If not provided, sys.exc_info() is called
+            to get the current exception.
 
     This is typically used in an except block to debug the exception:
 
@@ -381,7 +386,11 @@ def postmortem():
         except Exception:
             debugpy.postmortem()
 
-    If no debugger client is connected, or no exception is being handled,
+    Or with explicit exception info (e.g., in a context manager):
+
+        debugpy.postmortem(sys.exc_info())
+
+    If no debugger client is connected, or no exception info is available,
     this function does nothing.
     """
     ensure_logging()
@@ -391,7 +400,8 @@ def postmortem():
         log.info("postmortem() ignored - debugger not attached")
         return
 
-    exc_info = sys.exc_info()
+    if exc_info is None:
+        exc_info = sys.exc_info()
     exc_type, exc_value, exc_tb = exc_info
 
     if exc_type is None:
